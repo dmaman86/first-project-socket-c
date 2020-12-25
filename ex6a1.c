@@ -15,9 +15,11 @@
 #define ARR_SIZE 50
 #define RANGE_RAND 10
 #define MAX_PROCCESS 3
+const int START =  1;
 
 void init_array( int * );
 void init( char *, int *, int * );
+void client_connect( int *, int );
 void terminate( char * );
 
 int main( int argc, char ** argv )
@@ -27,10 +29,10 @@ int main( int argc, char ** argv )
         fprintf( stderr, "Missing values\n" );
         exit( EXIT_FAILURE );
     }
-    
+
     srand( 0 );
     int arr[ ARR_SIZE ];
-    int rc, main_socket;
+    int rc, main_socket, arr_client[ MAX_PROCCESS ] = { 0 };
 
     fd_set rfd, c_rfd;
     struct sockaddr_storage her_addr;
@@ -40,6 +42,7 @@ int main( int argc, char ** argv )
     init_array( arr );
     init( argv[ 1 ], &rc, &main_socket );
 
+    client_connect( arr_client, main_socket );
 
     return( EXIT_SUCCESS );
 }
@@ -79,6 +82,31 @@ void init( char *my_port, int * rc, int * main_socket )
 
     (* rc ) = listen( (* main_socket ), MAX_PROCCESS );
     if( (* rc ) ) terminate( "listed failed" );
+}
+
+void client_connect( int * arr_clients, int main_socket )
+{
+    int counter_clients = MAX_PROCCESS;
+    int index = 0, new_socket, i, j;
+    fd_set readfds, c_readfds;
+
+    while( counter_clients )
+    {
+        FD_ZERO( &readfds );
+        FD_SET( main_socket, &readfds );
+        if( FD_ISSET( main_socket, &readfds ) )
+        {
+            if( ( new_socket = accept( main_socket, NULL, NULL ) ) < 0 )
+                terminate( "accept" );
+
+            FD_SET( new_socket, &c_readfds );
+            arr_clients[ index++ ] = new_socket;
+            counter_clients--;
+        }
+    }
+
+    for( i = main_socket + 1, j = 0; j < MAX_PROCCESS; i++ )
+        write( i, &( arr_clients[ j++ ] ), sizeof( int ) );
 }
 
 void terminate( char * message_error )
