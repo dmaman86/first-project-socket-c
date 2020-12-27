@@ -19,7 +19,7 @@ void init( int *, int *, char *, char * );
 
 int main(int argc, char *argv[])
 {
-	 if (argc < 4)
+	 if (argc != 4)
     {
 	    fprintf(stderr, "Missing server name \n");
 	    exit(EXIT_FAILURE) ;
