@@ -112,7 +112,7 @@ int main( int argc, char ** argv )
         read( fd, &get_num, sizeof( int ) );
         write( fd, &FINISH, sizeof( int ) );
     }
-    // sleep( 2 );
+
     end = time( NULL );
     total_time = end - start;
 
