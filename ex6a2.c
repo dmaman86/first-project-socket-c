@@ -84,8 +84,8 @@ void init( int *my_socket, int *rc, char * str, char * my_port )
     freeaddrinfo( addr_info_res );
 }
 
-//=========================================================================
-//this function terminate the program if there is an error in fork
+//
+//this function terminate the program if there is an error
 void terminate( char *error_message )
 {
     perror( error_message );
