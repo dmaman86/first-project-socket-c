@@ -1,8 +1,7 @@
-// socket server multi clients
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>        // for memset
+#include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -10,56 +9,135 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <sys/time.h>
+#include <stdbool.h>
 
-#define ARR_SIZE 50
-#define RANGE_RAND 10
-#define MAX_PROCCESS 3
-const int START =  1;
+#define ARR_SIZE 100
+#define MAX_CLIENTS 3
+#define RANGE_RAND 2000
+const int NOT_FOUND = 0;
+const int FOUND = 1;
+const int FINISH = -1;
 
-void init_array( int * );
-void init( char *, int *, int * );
-void client_connect( int *, int );
+void build_array( int * );
+void connect_clients( int );
+int find( int *, int );
+void init( int *, int *, char *  );
 void terminate( char * );
+void sig_term( int );
 
 int main( int argc, char ** argv )
 {
     if( argc != 2 )
     {
-        fprintf( stderr, "Missing values\n" );
+        fprintf( stderr, "Mising values\n" );
         exit( EXIT_FAILURE );
     }
-
+    signal( SIGTERM, sig_term );
     srand( 0 );
-    int arr[ ARR_SIZE ];
-    int rc, main_socket, arr_client[ MAX_PROCCESS ] = { 0 };
 
-    fd_set rfd, c_rfd;
-    struct sockaddr_storage her_addr;
-    socklen_t her_addr_size;
+    int rc, main_socket, serving_socket, fd, total_time;
+    int get_num, counter_receive, counter_delete, index, clients_connect;
+    int arr_bingo[ ARR_SIZE ];
+    fd_set rfd;
+    fd_set c_rfd;
+    time_t start, end;
 
+    counter_receive = 0;
+    counter_delete = ARR_SIZE;
+    clients_connect = MAX_CLIENTS;
 
-    init_array( arr );
-    init( argv[ 1 ], &rc, &main_socket );
+    build_array( arr_bingo );
 
-    client_connect( arr_client, main_socket );
+    init( &main_socket, &rc, argv[ 1 ] );
 
-    return( EXIT_SUCCESS );
+    FD_ZERO( &rfd );
+    FD_SET( main_socket, &rfd );
+
+    while( counter_delete )
+    {
+        c_rfd = rfd;
+
+        rc = select( getdtablesize(), &c_rfd, NULL, NULL, NULL );
+
+        if( rc < 0 )
+            terminate( "error select" );
+        
+        if( FD_ISSET( main_socket, &c_rfd ) )
+        {
+            serving_socket = accept( main_socket, NULL, NULL );
+            if( serving_socket >= 0 )
+            {
+                FD_SET( serving_socket, &rfd );
+                clients_connect--;
+                if( !clients_connect )
+                    start = time( NULL );
+            }
+        }
+
+        if( !clients_connect )
+        {
+            for( fd = main_socket + 1; fd < getdtablesize(); fd++ )
+            {
+                if( FD_ISSET( fd, &c_rfd ) )
+                {
+                    rc = read( fd, &get_num, sizeof( int ) );
+                    counter_receive++;
+
+                    if( rc == 0 )
+                    {
+                        close( fd );
+                        FD_CLR( fd, &rfd );
+                    }
+                    else if( rc > 0 )
+                    {
+                        index = find( arr_bingo, get_num );
+
+                        if( index < 0 )
+                            write( fd, &NOT_FOUND, sizeof( int ) );
+                        else
+                        {
+                            write( fd, &FOUND, sizeof( int ) );
+                            counter_delete--;
+                        }
+                    }
+                    else
+                        terminate( "error read()" );
+                }
+            }
+        }
+    }
+
+    for( fd = main_socket + 1; fd < getdtablesize(); fd++ )
+    {
+        read( fd, &get_num, sizeof( int ) );
+        write( fd, &FINISH, sizeof( int ) );
+    }
+    // sleep( 2 );
+    end = time( NULL );
+    total_time = end - start;
+
+    printf( "%d %d %d\n", total_time, counter_receive, ARR_SIZE - counter_delete );
+
+    exit( EXIT_SUCCESS );
 }
 
-void init_array( int *arr )
+void terminate( char * error_message )
 {
-    int i;
-
-    for( i = 0; i < ARR_SIZE; i++ )
-        arr[ i ] = rand() % RANGE_RAND;
+    perror( error_message );
+    exit( EXIT_FAILURE );
 }
 
-void init( char *my_port, int * rc, int * main_socket )
+void sig_term( int sig )
+{
+    exit( EXIT_SUCCESS );
+}
+
+
+void init( int * main_socket, int * rc, char * my_port )
 {
     struct addrinfo con_kind, *addr_info_res;
 
-    memset( &con_kind, 0, sizeof con_kind );
+    memset( &con_kind, 0, sizeof( con_kind ) );
     con_kind.ai_family = AF_UNSPEC;
     con_kind.ai_socktype = SOCK_STREAM;
     con_kind.ai_flags = AI_PASSIVE;
@@ -76,41 +154,30 @@ void init( char *my_port, int * rc, int * main_socket )
     
     if( (* main_socket ) < 0 )
         terminate( "socket: allocation failed" );
-
+    
     (* rc ) = bind( (* main_socket ), addr_info_res->ai_addr, addr_info_res->ai_addrlen );
     if( (* rc ) ) terminate( "bind failed" );
 
-    (* rc ) = listen( (* main_socket ), MAX_PROCCESS );
-    if( (* rc ) ) terminate( "listed failed" );
+    (* rc ) = listen( ( *main_socket ), 1 );
+    if( (* rc ) ) terminate( "listen failed" );
 }
 
-void client_connect( int * arr_clients, int main_socket )
+void build_array( int *arr )
 {
-    int counter_clients = MAX_PROCCESS;
-    int index = 0, new_socket, i, j;
-    fd_set readfds, c_readfds;
+    int i;
 
-    while( counter_clients )
+    for( i = 0; i < ARR_SIZE; i++ )
+        arr[ i ] = rand() % RANGE_RAND;
+}
+
+int find( int * arr, int num )
+{
+    int i;
+
+    for( i = 0; i < 10; i++ )
     {
-        FD_ZERO( &readfds );
-        FD_SET( main_socket, &readfds );
-        if( FD_ISSET( main_socket, &readfds ) )
-        {
-            if( ( new_socket = accept( main_socket, NULL, NULL ) ) < 0 )
-                terminate( "accept" );
-
-            FD_SET( new_socket, &c_readfds );
-            arr_clients[ index++ ] = new_socket;
-            counter_clients--;
-        }
+        if( arr[ i ] == num )
+            return i;
     }
-
-    for( i = main_socket + 1, j = 0; j < MAX_PROCCESS; i++ )
-        write( i, &( arr_clients[ j++ ] ), sizeof( int ) );
-}
-
-void terminate( char * message_error )
-{
-    perror( message_error );
-    exit( EXIT_FAILURE );
+    return -1;
 }
