@@ -1,4 +1,22 @@
+/* Reverse Bingo
+ *=======================================
+ * NAME: David maman & Daniel Cohen
+ * ID: 327437422 & 311551386
+ * class: a2
+ * login: davidmam Danielcoh
+ * 
+ * This program get by vector argument seed
+ * and create array by 1000 cells.
+ * 
+ * Then other process try to delete cells
+ * from array.
+ * 
+ * When a array is empty a program get a signal
+ * and print how long did it take to complete
+ * the task.
+*/
 
+//--------- include section --------------
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,13 +29,15 @@
 #include <time.h>
 #include <stdbool.h>
 
-#define ARR_SIZE 100
+//--------- define & const section --------------
+#define ARR_SIZE 1000
 #define MAX_CLIENTS 3
-#define RANGE_RAND 2000
+#define RANGE_RAND 200000
 const int NOT_FOUND = 0;
 const int FOUND = 1;
 const int FINISH = -1;
 
+//--------- prototypes --------------
 void build_array( int * );
 void connect_clients( int );
 int find( int *, int );
@@ -25,6 +45,7 @@ void init( int *, int *, char *  );
 void terminate( char * );
 void sig_term( int );
 
+//------------ main -------------
 int main( int argc, char ** argv )
 {
     if( argc != 2 )
@@ -62,6 +83,7 @@ int main( int argc, char ** argv )
         if( rc < 0 )
             terminate( "error select" );
         
+        // start a time when 3 proccess connect
         if( FD_ISSET( main_socket, &c_rfd ) )
         {
             serving_socket = accept( main_socket, NULL, NULL );
@@ -69,6 +91,7 @@ int main( int argc, char ** argv )
             {
                 FD_SET( serving_socket, &rfd );
                 clients_connect--;
+                // !clients_connect -> clients_connect == 0
                 if( !clients_connect )
                     start = time( NULL );
             }
@@ -107,6 +130,7 @@ int main( int argc, char ** argv )
         }
     }
 
+    // send to all proccess finish, array is empty
     for( fd = main_socket + 1; fd < getdtablesize(); fd++ )
     {
         read( fd, &get_num, sizeof( int ) );
@@ -120,19 +144,28 @@ int main( int argc, char ** argv )
 
     exit( EXIT_SUCCESS );
 }
-
+//----------------------------------------
+/* terminate get array char
+ * This function finish a program if 
+ * some function failed
+ * */
 void terminate( char * error_message )
 {
     perror( error_message );
     exit( EXIT_FAILURE );
 }
-
+//----------------------------------------
+/* sig_term get integer
+ * signal handler
+ * */
 void sig_term( int sig )
 {
     exit( EXIT_SUCCESS );
 }
-
-
+//----------------------------------------
+/* init get 2 pointers integer and array char
+ * fthis function connect to socket
+ */
 void init( int * main_socket, int * rc, char * my_port )
 {
     struct addrinfo con_kind, *addr_info_res;
@@ -161,7 +194,10 @@ void init( int * main_socket, int * rc, char * my_port )
     (* rc ) = listen( ( *main_socket ), 1 );
     if( (* rc ) ) terminate( "listen failed" );
 }
-
+//----------------------------------------
+/* build_array get array of integer
+ * fthis function fill array by random numbers
+ */
 void build_array( int *arr )
 {
     int i;
@@ -169,7 +205,11 @@ void build_array( int *arr )
     for( i = 0; i < ARR_SIZE; i++ )
         arr[ i ] = rand() % RANGE_RAND;
 }
-
+//----------------------------------------
+/* find get array of integer and integer
+ * fthis function search some number in array
+ * if find return a index, else return -1
+ */
 int find( int * arr, int num )
 {
     int i;

@@ -1,4 +1,23 @@
-//client program:
+/* Create Number to Reverse Bingo
+ *=======================================
+ * NAME: David maman & Daniel Cohen
+ * ID: 327437422 & 311551386
+ * class: a2
+ * login: davidmam Danielcoh
+ * 
+ * This program connected to same port
+ * 
+ * A program send random number to ex6a1 to delete
+ * and raise counter of sends.
+ * 
+ * Ex6a1 response if success or not, 
+ * If success raise counter of delete
+ * 
+ * If a answer is -1: a procces display a counters
+ * 
+*/
+
+//--------- include section --------------
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,13 +29,16 @@
 #include <stdbool.h>
 #include <time.h>
 
+//--------- define & const section --------------
 #define RANGE_RAND 2000
 const int FOUND = 1;
 const int FINISH = -1;
 
+//--------- prototypes --------------
 void terminate( char * );
 void init( int *, int *, char *, char * );
 
+//------------ main -------------
 int main(int argc, char *argv[])
 {
 	 if (argc != 4)
@@ -56,7 +78,10 @@ int main(int argc, char *argv[])
 	
     return( EXIT_SUCCESS );
 }
-
+//----------------------------------------
+/* init get 2 pointers integer and 2 pointers char
+ * fthis function connect to socket
+ */
 void init( int *my_socket, int *rc, char * str, char * my_port )
 {
     struct addrinfo con_kind, *addr_info_res;
@@ -83,9 +108,11 @@ void init( int *my_socket, int *rc, char * str, char * my_port )
 
     freeaddrinfo( addr_info_res );
 }
-
-//
-//this function terminate the program if there is an error
+//----------------------------------------
+/* terminate get array of char
+ * This function finish a program if 
+ * some function failed
+ * */
 void terminate( char *error_message )
 {
     perror( error_message );
