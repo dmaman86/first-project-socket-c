@@ -1,7 +1,6 @@
 /* Create Number to Reverse Bingo
  *=======================================
  * NAME: David maman & Daniel Cohen
- * ID: 327437422 & 311551386
  * class: a2
  * login: davidmam Danielcoh
  * 
